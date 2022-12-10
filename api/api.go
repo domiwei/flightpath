@@ -32,11 +32,13 @@ func (h handler) postFlights(c *gin.Context) {
 	if err := c.BindJSON(&p); err != nil {
 		log.Printf("c.BindJSON failed. %v", err)
 		c.JSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	if err := h.flightStore.InsertFlights(pid, p.Path, p.DepartureTime); err != nil {
 		log.Printf("insertFlight failed. %v", err)
 		c.JSON(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{})
@@ -52,12 +54,14 @@ func (h handler) getFlights(c *gin.Context) {
 	if err := c.BindQuery(&p); err != nil {
 		log.Printf("c.BindQuery failed. %v", err)
 		c.JSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	paths, err := h.flightStore.GetFlights(pid)
 	if err != nil {
 		log.Printf("GetFlight failed. %v", err)
 		c.JSON(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	// filter out those satisfying departureTime constraint
