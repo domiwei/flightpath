@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,10 +29,12 @@ func (h handler) postFlights(c *gin.Context) {
 	pid := c.Param("personID")
 	var p postFlightParams
 	if err := c.BindJSON(&p); err != nil {
+		log.Printf("c.BindJSON failed. %v", err)
 		c.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	if err := h.flightStore.InsertFlights(pid, p.Path, p.DepartureTime); err != nil {
+		log.Printf("insertFlight failed. %v", err)
 		c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
