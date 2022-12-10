@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,6 +42,36 @@ func (h handler) postFlights(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-func (h handler) getFlights(c *gin.Context) {
+type getFlightParams struct {
+	DepartureGreaterThan int64 `json:"departureGreaterThan"`
+}
 
+func (h handler) getFlights(c *gin.Context) {
+	pid := c.Param("personID")
+	p := getFlightParams{}
+	if err := c.BindQuery(&p); err != nil {
+		log.Printf("c.BindQuery failed. %v", err)
+		c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	paths, err := h.flightStore.GetFlights(pid)
+	if err != nil {
+		log.Printf("GetFlight failed. %v", err)
+		c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	// filter out those satisfying departureTime constraint
+	filteredPaths := []FlightPath{}
+	for _, path := range paths {
+		if path.DepartureTime > p.DepartureGreaterThan {
+			filteredPaths = append(filteredPaths, path)
+		}
+	}
+
+	// Sort by departureTime in asceding order
+	sort.Slice(filteredPaths, func(i, j int) bool {
+		return filteredPaths[i].DepartureTime < filteredPaths[j].DepartureTime
+	})
+
+	c.JSON(http.StatusOK, filteredPaths)
 }

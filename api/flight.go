@@ -27,14 +27,19 @@ func (f *flight) InsertFlights(personID string, path [][]string, departure int64
 	if err != nil {
 		return errors.Wrapf(err, "resolvePath failed")
 	}
-	insertQuery := "INSERT INTO `paths` (`person_id`, `path`, `departure_time`, `insert_time`) VALUES (?,?,?,?)"
-	if _, err := f.db.Exec(insertQuery, personID, strings.Join(route, ","), departure, time.Now().Unix()); err != nil {
+	insertQuery := "INSERT INTO `paths` (`person_id`, `path`, `departure_time`, `insert_time`) VALUES (?,?,?,?)" +
+		" ON DUPLICATE KEY UPDATE `person_id`=VALUES(person_id), `departure_time`=VALUES(departure_time)"
+	if _, err := f.db.Exec(insertQuery,
+		personID,
+		strings.Join(route, ","),
+		departure,
+		time.Now().Unix()); err != nil {
 		return errors.Wrapf(err, "db.Exec failed")
 	}
 	return nil
 }
 
-func (f *flight) GetFlights(personID string) (*FlightpathsResponse, error) {
+func (f *flight) GetFlights(personID string) ([]FlightPath, error) {
 	// fetch from DB
 	query := "SELECT `path`, `departure_time` FROM `paths` WHERE `person_id`=?"
 	rows, err := f.db.Query(query, personID)
@@ -43,7 +48,7 @@ func (f *flight) GetFlights(personID string) (*FlightpathsResponse, error) {
 	}
 	defer rows.Close()
 
-	resp := FlightpathsResponse{}
+	resp := []FlightPath{}
 	for rows.Next() {
 		var path string
 		var departure int64
@@ -54,11 +59,11 @@ func (f *flight) GetFlights(personID string) (*FlightpathsResponse, error) {
 		resp = append(resp, FlightPath{
 			Path:          p,
 			Src:           p[0],
-			Dest:          p[1],
+			Dest:          p[len(p)-1],
 			DepartureTime: departure,
 		})
 	}
-	return &resp, nil
+	return resp, nil
 }
 
 func resolvePath(p [][]string) ([]string, error) {
