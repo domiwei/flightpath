@@ -14,8 +14,8 @@ make stop
 ```
 After containers are setup and running, try this curl request to test my work
 ```
-    curl -X POST localhost:8080/v1/calculate/kewei/flights -d '{"path": [["city2", "city3"], ["city1", "city2"], ["city3", "city4"]], "departureTime": 1670696785}'
-    curl -X GET "localhost:8080/v1/calculate/kewei/flights"
+curl -X POST localhost:8080/v1/calculate/kewei/flights -d '{"path": [["city2", "city3"], ["city1", "city2"], ["city3", "city4"]], "departureTime": 1670696785}'
+curl -X GET "localhost:8080/v1/calculate/kewei/flights"
 ```
 
 ## Code Structue
