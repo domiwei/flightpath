@@ -2,6 +2,8 @@ package api
 
 import (
 	"database/sql"
+	"flightpath/service/localcache"
+	"log"
 	"strings"
 	"time"
 
@@ -16,11 +18,13 @@ var (
 
 type flight struct {
 	db *sql.DB
+	lc localcache.Service
 }
 
-func NewFlightStore(db *sql.DB) *flight {
+func NewFlightStore(db *sql.DB, lc localcache.Service) *flight {
 	return &flight{
 		db: db,
+		lc: lc,
 	}
 }
 
@@ -39,10 +43,18 @@ func (f *flight) InsertFlights(personID string, path [][]string, departure int64
 		time.Now().Unix()); err != nil {
 		return errors.Wrapf(err, "db.Exec failed")
 	}
+	// Try delete cache data
+	f.lc.Delete(personID)
 	return nil
 }
 
 func (f *flight) GetFlights(personID string) ([]FlightPath, error) {
+	// Fetch from cache first
+	if val, ok := f.lc.Get(personID); ok {
+		log.Printf("cache hit %v", personID)
+		return val.([]FlightPath), nil
+	}
+
 	// fetch from DB
 	query := "SELECT `path`, `departure_time` FROM `paths` WHERE `person_id`=?"
 	rows, err := f.db.Query(query, personID)
@@ -66,6 +78,8 @@ func (f *flight) GetFlights(personID string) ([]FlightPath, error) {
 			DepartureTime: departure,
 		})
 	}
+
+	f.lc.SetDefault(personID, resp)
 	return resp, nil
 }
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"flightpath/service/localcache"
 	"log"
 	"net/http"
 	"sort"
@@ -9,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewHandler(r *gin.RouterGroup, db *sql.DB) {
+func NewHandler(r *gin.RouterGroup, db *sql.DB, lc localcache.Service) {
 	h := handler{
-		flightStore: NewFlightStore(db),
+		flightStore: NewFlightStore(db, lc),
 	}
 	r.POST("/:personID/flights", h.postFlights)
 	r.GET("/:personID/flights", h.getFlights)
